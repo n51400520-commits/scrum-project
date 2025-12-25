@@ -1,0 +1,51 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Получить код
+      uses: actions/checkout@v3
+
+    - name: 🧰 Установить Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: 📦 Установить зависимости
+      run: npm install
+
+    - name: ✅ Запустить тесты
+      run: npm test
+
+    - name: 🐳 Сборка Docker-образа
+      run: docker build -t quiz-app .
+
+    - name: 🚀 Push Docker-образа
+      run: echo "Push to DockerHub (настрой через Secrets)"
+    - name: ✅ Запустить тесты
+      run: npm test
+
+    - name: 🧹 Проверка линтера
+      run: npm run lint
+
+    - name: 🔒 Security scan (Snyk)
+      uses: snyk/actions/node@master
+      with:
+        command: test
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+    - name: 🐳 Сборка Docker-образа
+      run: docker build -t quiz-app .
+
+    - name: 🚀 Push Docker-образа
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        docker tag quiz-app yourdockerhub/quiz-app:latest
+        docker push yourdockerhub/quiz-app:latest
